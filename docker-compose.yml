@@ -12,6 +12,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - pgdata:/var/lib/postgresql/data
       # Automatically executes init.sql schema script on container startup
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
@@ -38,3 +39,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+        
+volumes:
+  pgdata: 
