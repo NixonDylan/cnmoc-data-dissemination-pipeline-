@@ -17,7 +17,6 @@ This architecture was built from scratch to demonstrate production-grade data en
 * **Polars Lazy Evaluation:** Built-in optimization maps an in-memory execution plan before data execution occurs, squeezing maximum performance out of parallel multi-core architectures.
 * **Stream-to-Memory Bulk Writing:** Serializes data straight to an unheadered CSV byte stream (`BytesIO`), feeding the PostgreSQL storage engine at near-disk speeds.
 * **Enterprise Security First Mindset:** Designed explicitly to support DISA STIG guidelines by validating all inputs at the data boundary layer, isolating read-only ERDDAP users, and maintaining transactional database integrity via automatic context managers.
-* **Future Scalability Roadmap:** Includes explicit hooks to transition the post-ingestion spatial synchronization into a native database trigger or generated column, eliminating table scans at production scale.
 
 ## Stack & Dependencies
 * **Core Processing:** Python 3.11+, Polars, Pydantic v2
