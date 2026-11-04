@@ -218,3 +218,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# =========================================================================
+# DATA ENGINEERING & INFRASTRUCTURE EXTENSIONS
+# =========================================================================
+# Local pipeline payload outputs (Prevents committing raw telemetry arrays)
+*.csv
+*.json
+*.nc
+*.bak
+*.xml.bak
+
+# Local Database Cache & Buffer Dumps
+.db_cache/
+*.sql
+*.dump
+
+# Local IDE configuration overrides (Keeps repo platform-agnostic)
+.vscode/
+.idea/

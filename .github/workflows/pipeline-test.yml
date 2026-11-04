@@ -1,0 +1,78 @@
+name: Test Data Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-pipeline-test:
+    runs-on: ubuntu-latest
+
+    # Spin up a temporary PostGIS database to test against
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: secure_password123
+          POSTGRES_DB: telemetry
+        ports:
+          - 5432:5432
+        # Wait for Postgres to fully awake and accept connections before starting
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Pull code from repo
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install polars psycopg pydantic
+
+    - name: Build database schema
+      run: |
+        # Apply live init.sql file to generate tables, indices, and generated columns
+        PGPASSWORD=secure_password123 psql -h localhost -U admin -d telemetry -f init.sql
+
+    - name: Run end-to-end integration test
+      env:
+        DB_CONNECTION: "postgresql://admin:secure_password123@localhost:5432/telemetry"
+      run: |
+        python -c "
+        import main, polars as pl
+        
+        # 1. Simulate a realistic batch of incoming stream data
+        # Includes one perfectly fine payload and one bad payload
+        mock_stream_data = [
+            {'buoy_id': 'NAVY_BUOY_01', 'timestamp': '2026-11-04T12:00:00Z', 'latitude': 30.2, 'longitude': -89.8, 'sea_surface_temperature': 24.5},
+            {'buoy_id': 'BAD_DRIFT_BUOY', 'timestamp': '2026-11-04T12:05:00Z', 'latitude': 150.0, 'longitude': -180.0, 'sea_surface_temperature': 12.0}
+        ]
+        
+        print('Testing ingestion validation and data filtering...')
+        df, dlq = main.process_kafka_batch(mock_stream_data)
+        
+        # 2. Ensure filters and Pydantic boundaries are working
+        print(f'Valid rows extracted: {len(df)} | Bad rows sent to DLQ: {len(dlq)}')
+        assert len(df) == 1, 'Error: The clean payload was dropped by mistake.'
+        assert len(dlq) == 1, 'Error: Pydantic let an invalid coordinate slip through.'
+        print('Validation logic works perfectly.')
+        
+        # 3. Test streaming the clean data frame into Postgres via native COPY protocol
+        print('Testing bulk insertion stream...')
+        main.bulk_insert_to_postgis(df, '${{ env.DB_CONNECTION }}')
+        print('Database stream write completed successfully.')
+        
+        print('All integration tests passed!')
+        "

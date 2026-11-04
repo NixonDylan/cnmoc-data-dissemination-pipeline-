@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Storage Layer: PostGIS Database
+  postgres:
+    image: postgis/postgis:15-3.3
+    container_name: cnmoc_postgis
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password123}
+      POSTGRES_DB: telemetry
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Automatically executes init.sql schema script on container startup
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d telemetry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Dissemination Layer: ERDDAP Gateway
+  erddap:
+    image: axioms/erddap:2.23
+    container_name: cnmoc_erddap
+    ports:
+      - "8080:8080"
+    environment:
+      # Injects environment variables datasets.xml file is looking for
+      - DB_HOST=postgres
+      - DB_NAME=telemetry
+      - ERDDAP_READ_USER=admin
+      - ERDDAP_READ_PASSWORD=${DB_PASSWORD:-secure_password123}
+    volumes:
+      # Mounts datasets.xml mapping configuration straight into ERDDAP
+      - ./datasets.xml:/usr/local/tomcat/content/erddap/datasets.xml
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+volumes:
+  pgdata: 
