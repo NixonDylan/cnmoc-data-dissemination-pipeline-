@@ -1,0 +1,98 @@
+<dataset type="EDDTableFromDatabase" datasetID="buoy_telemetry_optimized" active="true">
+    <!-- 1. Connection & Routing Properties -->
+    <driverClassName>org.postgresql.Driver</driverClassName>
+    <connectionString>jdbc:postgresql://YOUR_DATABASE_HOST:5432/YOUR_DATABASE_NAME</connectionString>
+    <dbUser>YOUR_ERDDAP_READ_ONLY_USER</dbUser>
+    <dbPassword>YOUR_SECURE_PASSWORD</dbPassword>
+    <catalogName></catalogName>
+    <schemaName>public</schemaName>
+    <!-- Point exactly to your optimized PostGIS table -->
+    <tableName>telemetry_table</tableName>
+   
+    <!-- 2. Performance Tuning & Freshness SLA -->
+    <!-- Reloads database metadata every 5 minutes to meet the 15-minute SLA -->
+    <reloadEveryNMinutes>5</reloadEveryNMinutes>
+    <!-- Ensures ERDDAP doesn't pull the entire history unless requested -->
+    <redirectFirstStationToFetchAllOnFirstRequest>false</redirectFirstStationToFetchAllOnFirstRequest>
+
+    <!-- 3. Global Metadata (CF-1.6 / Attribute Convention for Data Discovery Compliance) -->
+    <sourceAttributes>
+    </sourceAttributes>
+    <addAttributes>
+        <att name="cdm_data_type">TimeSeries</att>
+        <att name="conventions">CF-1.6, COARDS, ACDD-1.3</att>
+        <att name="infoUrl">https://navy.mil</att>
+        <att name="institution">Commander, Naval Meteorology and Oceanography Command (CNMOC)</att>
+        <att name="keywords">buoy, sea, surface, temperature, telemetry, oceanography, cnmoc</att>
+        <att name="license">For official naval operational and scientific use.</att>
+        <att name="sourceUrl">(local database)</att>
+        <att name="standard_name_vocabulary">CF Standard Name Table v70</att>
+        <att name="title">Optimized Real-Time Buoy Telemetry Data Stream</att>
+    </addAttributes>
+
+    <!-- 4. Data Variable Mapping & Standard Name Enforcements -->
+   
+    <!-- Unique Station Identifier -->
+    <dataVariable>
+        <sourceName>buoy_id</sourceName>
+        <destinationName>station_id</destinationName>
+        <dataType>String</dataType>
+        <addAttributes>
+            <att name="cf_role">timeseries_id</att>
+            <att name="long_name">Buoy Platform Identifier</att>
+        </addAttributes>
+    </dataVariable>
+
+    <!-- Time Coordinate (Must be in UTC in database) -->
+    <dataVariable>
+        <sourceName>time</sourceName>
+        <destinationName>time</destinationName>
+        <dataType>String</dataType> <!-- ERDDAP converts Timestamp strings internally -->
+        <addAttributes>
+            <att name="long_name">Observation Time</att>
+            <att name="standard_name">time</att>
+            <!-- ERDDAP parses ISO strings or explicit database timestamp formats natively -->
+            <att name="units">yyyy-MM-dd'T'HH:mm:ss'Z'</att>
+        </addAttributes>
+    </dataVariable>
+
+    <!-- Latitude Coordinate -->
+    <dataVariable>
+        <sourceName>latitude</sourceName>
+        <destinationName>latitude</destinationName>
+        <dataType>double</dataType>
+        <addAttributes>
+            <att name="long_name">Latitude</att>
+            <att name="standard_name">latitude</att>
+            <att name="units">degrees_north</att>
+        </addAttributes>
+    </dataVariable>
+
+    <!-- Longitude Coordinate -->
+    <dataVariable>
+        <sourceName>longitude</sourceName>
+        <destinationName>longitude</destinationName>
+        <dataType>double</dataType>
+        <addAttributes>
+            <att name="long_name">Longitude</att>
+            <att name="standard_name">longitude</att>
+            <att name="units">degrees_east</att>
+        </addAttributes>
+    </dataVariable>
+
+    <!-- Sea Surface Temperature (Observed Variable) -->
+    <dataVariable>
+        <sourceName>sea_surface_temperature</sourceName>
+        <destinationName>sea_surface_temperature</destinationName>
+        <dataType>double</dataType>
+        <addAttributes>
+            <att name="long_name">Sea Surface Temperature</att>
+            <!-- CF-1.6 Mandatory Standard Name -->
+            <att name="standard_name">sea_surface_temperature</att>
+            <!-- Enforced Unit Standard -->
+            <att name="units">degree_Celsius</att>
+            <att name="ioos_category">Temperature</att>
+        </addAttributes>
+    </dataVariable>
+
+</dataset>
