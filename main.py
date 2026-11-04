@@ -63,7 +63,7 @@ def bulk_insert_to_postgis(df: pl.DataFrame, db_connection_string: str):
             
             # Post-Ingestion Spatial Sync: Convert numerical coordinates into a physical
             # indexed Earth coordinate geometry (WGS 84 / SRID 4326) for downstream ERDDAP queries.
-	          # In a large scale enviorment optimize this by changing it to a PostgreSQL database 
+	        # In a large scale enviorment optimize this by changing it to a PostgreSQL database 
             # trigger or a generated column to eliminate this post-ingestion UPDATE scan.
             cur.execute("""
                 UPDATE telemetry_table 
