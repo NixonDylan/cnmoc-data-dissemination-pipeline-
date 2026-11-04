@@ -23,3 +23,17 @@ This architecture was built from scratch to demonstrate production-grade data en
 * **Core Processing:** Python 3.11+, Polars, Pydantic v2
 * **Database Infrastructure:** PostgreSQL, PostGIS, Psycopg 3
 * **Dissemination Engine:** ERDDAP (DataHub/Amundsen adjacent mapping formats)
+ 
+## Database Schema & Spatial Optimization
+The pipeline assumes a backing PostGIS-enabled PostgreSQL instance configured with the schema provided in `init.sql`.
+
+### Zero-Overhead Spatial Indexing
+To maximize bulk insertion throughput, spatial geometries are not computed in application code or via post-ingestion sequential updates. Instead, the database uses a **Stored Generated Column** to automatically derive coordinates during the psycopg `COPY` stream:
+
+```sql
+geom GEOMETRY(Point, 4326) GENERATED ALWAYS AS (
+    ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
+) STORED;
+```
+
+A **GiST (Generalized Search Tree) Index** is explicitly declared on the computed `geom` column (`idx_telemetry_geom`). This ensures that downstream geographic polygon or bounding-box requests sent by the ERDDAP interoperability layer execute via index scans rather than expensive, slow sequential table scans.
